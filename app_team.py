@@ -13,9 +13,16 @@ from autogen_core import CancellationToken
 from autogen_core.models import ChatCompletionClient
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
+
+model_config_path = "model_config.yaml"
+state_path = "team_state.json"
+history_path = "team_history.json"
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +36,6 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
 )
-
-model_config_path = "model_config.yaml"
-state_path = "team_state.json"
-history_path = "team_history.json"
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="."), name="static")
@@ -134,7 +137,7 @@ async def chat(websocket: WebSocket):
                 async for message in stream:
                     if isinstance(message, TaskResult):
                         continue
-                    await websocket.send_json(message.model_dump())
+                    await websocket.send_json(jsonable_encoder(message.model_dump()))
                     if not isinstance(message, UserInputRequestedEvent):
                         # Don't save user input events to history.
                         history.append(message.model_dump())
@@ -160,13 +163,13 @@ async def chat(websocket: WebSocket):
                     "source": "system"
                 }
                 try:
-                    await websocket.send_json(error_message)
+                    await websocket.send_json(jsonable_encoder(error_message))
                     # Re-enable input after error
-                    await websocket.send_json({
+                    await websocket.send_json(jsonable_encoder({
                         "type": "UserInputRequestedEvent",
                         "content": "An error occurred. Please try again.",
                         "source": "system"
-                    })
+                    }))
                 except WebSocketDisconnect:
                     # Client disconnected while sending error - exit gracefully
                     logger.info("Client disconnected while sending error message")
@@ -180,11 +183,11 @@ async def chat(websocket: WebSocket):
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         try:
-            await websocket.send_json({
+            await websocket.send_json(jsonable_encoder({
                 "type": "error",
                 "content": f"Unexpected error: {str(e)}",
                 "source": "system"
-            })
+            }))
         except WebSocketDisconnect:
             # Client already disconnected - no need to send
             logger.info("Client disconnected before error could be sent")
