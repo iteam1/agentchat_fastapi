@@ -32,6 +32,10 @@ To start the FastAPI server for single-agent chat, run:
 ```bash
 python app_agent.py
 ```
+or:
+```bash
+uvicorn app_agent:app --host 0.0.0.0 --port 8001 --reload
+```
 
 Visit http://localhost:8001 in your browser to start chatting.
 
@@ -41,6 +45,10 @@ To start the FastAPI server for team chat, run:
 
 ```bash
 python app_team.py
+```
+or:
+```bash
+uvicorn app_team:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 Visit http://localhost:8002 in your browser to start chatting.
