@@ -114,6 +114,7 @@ async def chat(websocket: WebSocket):
 
     # User input function used by the team.
     async def _user_input(prompt: str, cancellation_token: CancellationToken | None) -> str:
+        """For the team can request mid-run user input."""
         try:
             data = await websocket.receive_json()
             message = TextMessage.model_validate(data)
@@ -125,7 +126,7 @@ async def chat(websocket: WebSocket):
 
     try:
         while True:
-            # Get user message.
+            # Get user message. Runs once per turn to start team.run_stream(task=request)
             data = await websocket.receive_json()
             request = TextMessage.model_validate(data)
 
